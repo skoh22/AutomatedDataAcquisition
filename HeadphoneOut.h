@@ -17,9 +17,14 @@ class TimHeadphoneOut : public AudioStream
       philMag = m;
       __enable_irq();
     }
-    void TimHeadphoneOut::SetDCoffset(int i) {
+    void TimHeadphoneOut::SetDCoffsetLeft(int i) {
       __disable_irq();
-      DCoffset = i;
+      DCoffsetLeft = i;
+      __enable_irq();
+    }
+    void TimHeadphoneOut::SetDCoffsetRight(int j) {
+      __disable_irq();
+      DCoffsetRight = j;
       __enable_irq();
     }
     void TimHeadphoneOut::SetInversion(bool v) {
@@ -35,5 +40,6 @@ class TimHeadphoneOut : public AudioStream
   private:
     double philMag = 1000.0;
     double phaseVal = 0.0;
-    int DCoffset = 0;
+    int DCoffsetLeft = 0;
+    int DCoffsetRight = 0;
 };

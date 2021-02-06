@@ -36,7 +36,7 @@ void setup() {
   wm8731.inputLevel(0.75);
   wm8731.inputSelect(AUDIO_INPUT_LINEIN);
   delay(50);
-  Serial.println("Automated Test");
+  Serial.println("Automated Test\n");
   pinMode(17, OUTPUT);
   pinMode(16, OUTPUT);
   pinMode(15, OUTPUT);
@@ -46,126 +46,91 @@ void setup() {
 
 }
 
-char c;
-bool passThruMode = false;
+String c;
 void loop() {
-  if (passThruMode) CheckForResponseFromBlueTooth() ;
-
   if (Serial.available()) {
-    c = Serial.readLine();
-    if (c == 'x') passThruMode = false;
-    if (passThruMode) {
-      if (c == '\n') {
-        SERIAL_FOR_BLUETOOTH_MODULE.println();
-      } else {
-        SERIAL_FOR_BLUETOOTH_MODULE.print(c);
+    c = Serial.readString();
+    //A command sets output voltage with Arduino int input, gives voltage in volts
+    if (c.startsWith('A')) {
+      //Serial.print("String: ");
+      //Serial.println(c);
+      c.remove(0, 2);
+      //Serial.print("Removed String: ");
+      //Serial.println(c);
+      int DCoffset = c.toInt();
+      if (DCoffset > -32768 && DCoffset < 32767) {
+        float outputVolts = 0.000049312088 * DCoffset + 1.690461538;
+        //Serial.printf("Output Voltage: %f V\n", outputVolts);
+        //Serial.println();
+        headphoneOut1.SetMagnitude(0);
+        headphoneOut1.SetFrequency(440);
+        headphoneOut1.SetInversion(false);
+        headphoneOut1.SetDCoffsetLeft(DCoffset);
+        Serial.printf("Set Left/Gate to %f V by setting to %d \n", outputVolts, DCoffset);
       }
-      return;
-    }
-
-    if (c == 'a') {
-      headphoneOut1.SetMagnitude(32000);
-      headphoneOut1.SetFrequency(440);
-      headphoneOut1.SetInversion(true);
-      headphoneOut1.SetDCoffset(0);
-
+      else {
+        Serial.println("Value is outside range. Try again.\n");
+      }
       wm8731.volume(.94);  // 3.4V peak-to-peak is clipping limit of headphone driver
       // 32000 mag and 0.94 volume gives 3.20V peak-peak output;
     }
-    if (c == 'A') {
-      headphoneOut1.SetMagnitude(5000);
-      headphoneOut1.SetFrequency(440);
-      headphoneOut1.SetInversion(false);
-      headphoneOut1.SetDCoffset(-10000);
-
+    if (c.startsWith('B')) {
+      c.remove(0, 2);
+      int DCoffset = c.toInt();
+      if (DCoffset > -32768 && DCoffset < 32767) {
+        float outputVolts = 0.000049312088 * DCoffset + 1.690461538;
+        //Serial.printf("Output Voltage: %f V\n", outputVolts);
+        //Serial.println();
+        headphoneOut1.SetMagnitude(0);
+        headphoneOut1.SetFrequency(440);
+        headphoneOut1.SetInversion(false);
+        headphoneOut1.SetDCoffsetRight(DCoffset);
+        Serial.printf("Set Right/Drain to %f V by setting to %d \n", outputVolts, DCoffset);
+      }
+      else {
+        Serial.println("Value is outside range. Try again.\n");
+      }
       wm8731.volume(.94);  // 3.4V peak-to-peak is clipping limit of headphone driver
       // 32000 mag and 0.94 volume gives 3.20V peak-peak output;
     }
-
-    if (c == 'b') {
-      wm8731.volume(0);
+    if (c.startsWith('c')) {
+      Serial.printf( "Read vals: %f,%f\n", peak1.read(), peak1.readRMS());
     }
-
-    if (c == 'B') {
-      int DCOffsetValue1 = 0;
-      headphoneOut1.SetMagnitude(0);
-      headphoneOut1.SetFrequency(440);
-      headphoneOut1.SetInversion(false);
-      headphoneOut1.SetDCoffset(DCOffsetValue1);
-      float outputVolts = 0.000049312088*DCOffsetValue1 + 1.690461538;
-      Serial.printf("Output Volts: %f V", outputVolts);
-      Serial.println();
-
-      wm8731.volume(.94);  // 3.4V peak-to-peak is clipping limit of headphone driver
-      // 32000 mag and 0.94 volume gives 3.20V peak-peak output;
-    }
-    if (c == 'c') {
-      Serial.printf( "%f,%f,%f,%f\n", peak0.read(), peak0.readRMS(), peak1.read(), peak1.readRMS());
-    }
-    if (c == 'C') {
+    if (c.startsWith('C')) {
       float firstPeak = peak1.readLast();
       Serial.printf( "%f,%f\n", peak0.readLast(), firstPeak);
-      float firstPeakVolts = .00004387953486 * firstPeak + 1.718627245;
-      Serial.printf("Input Volts: %f V", firstPeakVolts);
-      Serial.println();
+      //float firstPeakVolts = .00004387953486 * firstPeak + 1.718627245;
+      //Serial.printf("Input Volts: %f V", firstPeakVolts);
+      //Serial.println();
     }
 
-
-
-    if (c == 'd') {
-      PrepareBLE();
-      SERIAL_FOR_BLUETOOTH_MODULE.println("AT+DEFAULT");
-      WaitWhileCheckingForMessages(100);
-      PrepareBLE();
-    }
-    
     if (c == 'D') {
       //set DC output
       int DCOffsetValue2 = -15000;
       headphoneOut1.SetMagnitude(0);
       headphoneOut1.SetFrequency(440);
       headphoneOut1.SetInversion(false);
-      headphoneOut1.SetDCoffset(DCOffsetValue2);
+      headphoneOut1.SetDCoffsetLeft(DCOffsetValue2);
       //calc output in volts
-      float outputVolts = 0.000049312088*DCOffsetValue2 + 1.690461538;
-      Serial.printf("Output Voltage: %f V", outputVolts);
-      Serial.println();
+      float outputVolts = 0.000049312088 * DCOffsetValue2 + 1.690461538;
+      Serial.printf("Output Voltage: %f V\n", outputVolts);
       //read input
       float drainRead = peak1.readLast();
       float drainVolts =  .00004387953486 * drainRead + 1.718627245;
-      Serial.printf("Drain Voltage: %f V", drainVolts);
-      Serial.println();
+      Serial.printf("Drain Voltage: %f V\n", drainVolts);
       //calc current
-      float drainCurrent = 1000*(outputVolts - drainVolts)/10;
-      Serial.printf("Drain Current: %f mA", drainCurrent);
-      Serial.println();
-      
+      float drainCurrent = 1000 * (outputVolts - drainVolts) / 10;
+      Serial.printf("Drain Current: %f mA\n", drainCurrent);
+
       wm8731.volume(.94);  // 3.4V peak-to-peak is clipping limit of headphone driver
       // 32000 mag and 0.94 volume gives 3.20V peak-peak output;
-    }
-
-    if (c == 'e') {
-      SERIAL_FOR_BLUETOOTH_MODULE.println("AT+ADDR");
-      WaitWhileCheckingForMessages(100);
-    }
-
-    if (c == 'f') {
-      SERIAL_FOR_BLUETOOTH_MODULE.println("AT+ROLE1");
-      WaitWhileCheckingForMessages(1000);
-      SERIAL_FOR_BLUETOOTH_MODULE.println("AT+INQ");
-      WaitWhileCheckingForMessages(10000);
-    }
-
-
-    if (c == 'g') {
-      passThruMode = true;
     }
 
     if (c == 'h') {
       headphoneOut1.SetMagnitude(20000);
       headphoneOut1.SetFrequency(440);
       headphoneOut1.SetInversion(false);
-      headphoneOut1.SetDCoffset(0);
+      headphoneOut1.SetDCoffsetLeft(0);
 
 
       wm8731.volume(.94);  // 3.4V peak-to-peak is clipping limit of headphone driver
@@ -176,74 +141,20 @@ void loop() {
       headphoneOut1.SetMagnitude(20000);
       headphoneOut1.SetFrequency(440);
       headphoneOut1.SetInversion(true);
-      headphoneOut1.SetDCoffset(0);
+      headphoneOut1.SetDCoffsetLeft(0);
 
 
       wm8731.volume(.94);  // 3.4V peak-to-peak is clipping limit of headphone driver
       // 30000 mag and 0.94 volume gives 3.00V peak-peak output;
     }
-    if (c == 'j') {
-      SERIAL_FOR_BLUETOOTH_MODULE.println("AT+ROLE1");
-      WaitWhileCheckingForMessages(1000);
-    }
-
-    if (c == 'k') {
-      uint32_t uuid = HW_OCOTP_MAC0;
-      Serial.printf("%08X\n", uuid);
-      uint32_t uuid1 = HW_OCOTP_MAC1;
-      Serial.printf("%08X\n", uuid1);
-    }
-
-    if (c == 'l') { // serial number
-      Serial.println("@l");
-      uint32_t gooseNumber = GetNumberForGooseName();
-      Serial.println(gooseNumber);
-    }
-
-    if (c == 'm') {  // mac address
-      GetNumberForGooseName();
-      Serial.printf("%02X:%02X:%02X:%02X:%02X:%02X\n", macAddressFromGooseName[0], macAddressFromGooseName[1], macAddressFromGooseName[2], macAddressFromGooseName[3], macAddressFromGooseName[4], macAddressFromGooseName[5]);
-    }
-    if (c == 'n') {
-      SERIAL_FOR_BLUETOOTH_MODULE.println("AT+LADDR");
-      WaitWhileCheckingForMessages(100);
-    }
-    if (c == 'o') {
-      SERIAL_FOR_BLUETOOTH_MODULE.println("AT+HELP");
-      WaitWhileCheckingForMessages(2000);
-    }
-    if (c == 'p') {
-      SERIAL_FOR_BLUETOOTH_MODULE.println("AT");
-      WaitWhileCheckingForMessages(500);
-    }
     if (c == 'q') {
       Serial.println("hello");
-    }
-
-    if (c == 'v') {  // get bluetooth module version
-      SERIAL_FOR_BLUETOOTH_MODULE.println("AT+VERSION");
-      WaitWhileCheckingForMessages(1000);
     }
 
     if (c == 'w') {
 
       Serial.println(analogRead(0));
     }
-
-
-    if (c == 'x') digitalWrite(17, LOW);
-    if (c == 'X') digitalWrite(17, HIGH);
-
-    if (c == 'y') digitalWrite(16, LOW);
-    if (c == 'Y') digitalWrite(16, HIGH);
-
-    if (c == 'z') digitalWrite(15, LOW);
-    if (c == 'Z') digitalWrite(15, HIGH);
-
-
-
-
-
   }
 
 }

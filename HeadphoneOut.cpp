@@ -25,14 +25,14 @@ void TimHeadphoneOut::update(void)
 
       if (dval > 32767) dval = 32767;
       if (dval < -32768) dval = -32768;
-      int16_t val = dval + DCoffset;
+      int16_t val = dval + DCoffsetLeft;
       
       
       
       block->data[i] = val;
       if (val == -32768) val = -32767;
       if (invertSecondChannel) val = - val;
-      blockInverted->data[i] =  val;
+      blockInverted->data[i] =  DCoffsetRight;
   
     }
     transmit(block, 0);
